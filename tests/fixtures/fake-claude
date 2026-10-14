@@ -1,0 +1,31 @@
+#!/bin/bash
+# Stands in for the Claude Code CLI in tests. Records its arguments and stdin,
+# then prints stream-json events like `claude -p --output-format stream-json`.
+log="${FAKE_CLAUDE_LOG:-/dev/null}"
+printf '%s\n' "$@" > "$log.args"
+cat > "$log.stdin"
+sid="11111111-2222-3333-4444-555555555555"
+emit() { printf '%s\n' "$1"; sleep "${FAKE_CLAUDE_DELAY:-0.05}"; }
+
+case "${FAKE_CLAUDE_MODE:-ok}" in
+  auth)
+    emit '{"type":"result","subtype":"success","is_error":true,"result":"Not logged in · Please run /login","session_id":"'$sid'"}'
+    exit 1 ;;
+  crash)
+    echo "boom: something exploded" >&2
+    exit 3 ;;
+  hang)
+    emit '{"type":"system","subtype":"init","session_id":"'$sid'","model":"claude-sonnet-5-5"}'
+    sleep 30 ;;
+esac
+
+emit '{"type":"system","subtype":"init","session_id":"'$sid'","model":"claude-sonnet-5-5"}'
+emit '{"type":"stream_event","event":{"type":"message_start"},"session_id":"'$sid'"}'
+emit '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text"}}}'
+for w in "Hello" " from" " the" " fake" " Claude."; do
+  emit '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"'"$w"'"}}}'
+done
+emit '{"type":"assistant","message":{"content":[{"type":"text","text":"Hello from the fake Claude."}]},"session_id":"'$sid'"}'
+emit '{"type":"result","subtype":"success","is_error":false,"result":"Hello from the fake Claude.","session_id":"'$sid'"}'
+# Real Claude Code keeps running briefly after its final event
+sleep "${FAKE_CLAUDE_LINGER:-0}"

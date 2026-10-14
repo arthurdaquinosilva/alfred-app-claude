@@ -1,0 +1,12 @@
+{
+  "name": "alfred-claude",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Alfred workflow that chats with Claude using your Claude subscription via Claude Code",
+  "scripts": {
+    "build": "python3 scripts/build.py",
+    "install-workflow": "python3 scripts/build.py --install",
+    "icon": "swift scripts/make-icon.swift workflow/icon.png",
+    "test": "node --test \"tests/*.test.js\""
+  }
+}
